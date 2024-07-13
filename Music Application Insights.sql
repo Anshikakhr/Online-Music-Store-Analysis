@@ -1,4 +1,22 @@
-/* Top 5 customers who spent most on artists */
+/*WHERE TO HOST*/
+
+SELECT country, COUNT(*) as CustomerCount
+FROM customer
+GROUP BY country
+ORDER BY CustomerCount DESC;
+
+/*TOP SELLING ARTISTS*/
+
+SELECT artist.artist_id AS artist_id, artist.name AS artist_name, SUM(invoice_line.unit_price*invoice_line.quantity) AS total_sales
+	FROM invoice_line
+	JOIN track ON track.track_id = invoice_line.track_id
+	JOIN album ON album.album_id = track.album_id
+	JOIN artist ON artist.artist_id = album.artist_id
+	GROUP BY 1
+	ORDER BY 3 DESC
+	LIMIT 5
+
+/* Top 5 customers who spent most on popular artists-> A chance to take photo with them + VIP tickets */
 
 /* Steps to Solve: First, find which artist has earned the most according to the InvoiceLines. Now use this artist to find 
 which customer spent the most on this artist. For this query, you will need to use the Invoice, InvoiceLine, Track, Customer, 
@@ -14,9 +32,9 @@ WITH best_selling_artist AS (
 	JOIN artist ON artist.artist_id = album.artist_id
 	GROUP BY 1
 	ORDER BY 3 DESC
-	LIMIT 1
+	LIMIT 5
 )
-SELECT c.customer_id, c.first_name, c.last_name, bsa.artist_name, SUM(il.unit_price*il.quantity) AS amount_spent
+SELECT DISTINCT c.customer_id, c.first_name, c.last_name, bsa.artist_name, SUM(il.unit_price*il.quantity) AS amount_spent
 FROM invoice i
 JOIN customer c ON c.customer_id = i.customer_id
 JOIN invoice_line il ON il.invoice_id = i.invoice_id
@@ -75,7 +93,7 @@ WHERE sales_per_country.purchases_per_genre = max_genre_per_country.max_genre_nu
 
 
 /* Customers that have spent the most on music for each country. 
-For countries where the top amount spent is shared, provide all customers who spent this amount. */
+For countries where the top amount spent is shared, provide all customers who spent this amount. ->To offer the free subscription*/
 
 /* Steps to Solve: There are two parts in question- 
 first find the most spent on music for each country and second filter the data for respective customers. */
@@ -115,35 +133,7 @@ WHERE cc.total_spending = ms.max_spending
 ORDER BY 1; */
 
 
-
-/* Top 5 countries having most Invoices? */
-
-SELECT COUNT(*) AS c, billing_country 
-FROM invoice
-GROUP BY billing_country
-ORDER BY c DESC
-LIMIT 5
-
-
-/* Top 3 values of total invoice */
-
-SELECT total 
-FROM invoice
-ORDER BY total DESC
-LIMIT 3	
-
-
-/* Best customers - The one who spends the more money -> To offer them goodies */
-
-SELECT customer.customer_id, first_name, last_name,customer.country, SUM(total) AS total_spending
-FROM customer
-JOIN invoice ON customer.customer_id = invoice.customer_id
-GROUP BY customer.customer_id
-ORDER BY total_spending DESC
-LIMIT 5;
-
-
-/* Customer details of all Hip Hop/Rap Music listeners. */
+/* Customer details of all Hip Hop/Rap Music listeners.->Personalized mail for Exclusive Surprise(NEW LAUNCH) */
 
 SELECT DISTINCT email,first_name, last_name
 FROM customer
@@ -167,35 +157,41 @@ JOIN genre ON genre.genre_id = track.genre_id
 WHERE genre.name LIKE 'Rock'
 ORDER BY email; */
 
-
-/*Top 5 artists to invite for music festival who have written the most rock music in our dataset.  */
-
-SELECT artist.artist_id, artist.name,COUNT(artist.artist_id) AS number_of_songs
-FROM track
-JOIN album ON album.album_id = track.album_id
-JOIN artist ON artist.artist_id = album.artist_id
-JOIN genre ON genre.genre_id = track.genre_id
-WHERE genre.name LIKE 'Rock'
-GROUP BY artist.artist_id
-ORDER BY number_of_songs DESC
-LIMIT 5;
-
-/*  Which city has the best customers? 
-	We would like to throw a promotional Music Festival in the city we made the most money. */
-
-SELECT billing_city,SUM(total) AS InvoiceTotal
-FROM invoice
-GROUP BY billing_city
-ORDER BY InvoiceTotal DESC
-LIMIT 1;
-
-
-/* Senior most employee based on level for handling event */
+/* Senior most employees based on level for handling event */
 
 SELECT title, last_name, first_name 
 FROM employee
 ORDER BY levels DESC
-LIMIT 1
+LIMIT 6
+
+/* Average of total invoice -> Price of Event Pass */
+SELECT  MAX(total) as maximum , MIN(total) as mimimum , AVG(total) as average
+FROM invoice
+WHERE billing_country LIKE 'USA'
+
+/* POPULAR PLAYLISTS*/	
+SELECT playlist.playlist_id, playlist.name, invoice.billing_country, 
+SUM(invoice_line.unit_price * invoice_line.quantity) AS total_revenue
+FROM playlist
+JOIN playlist_track ON playlist_track.playlist_id = playlist.playlist_id
+JOIN track ON track.track_id = playlist_track.track_id
+JOIN invoice_line ON invoice_line.track_id = track.track_id
+JOIN invoice ON invoice.invoice_id = invoice_line.invoice_id	
+GROUP BY playlist.playlist_id, playlist.name, invoice.billing_country
+ORDER BY total_revenue DESC
+LIMIT 10;
+
+/*TRACK LENGTH - For Time Management*/
+SELECT 
+    CASE 
+        WHEN milliseconds < 180000 THEN 'Short (< 3 min)'
+        WHEN milliseconds BETWEEN 180000 AND 300000 THEN 'Medium (3-5 min)'
+        ELSE 'Long (> 5 min)'
+    END AS TrackLength,
+    COUNT(*) as TrackCount
+FROM track t
+GROUP BY TrackLength	
+ORDER BY TrackCount DESC;
 
 
 
